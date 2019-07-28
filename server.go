@@ -5,6 +5,7 @@ import (
 	"net"
 	"os"
 	"bufio"
+	"strings"
 )
 
 func main() {
@@ -23,7 +24,7 @@ func main() {
 	defer listener.Close()
 
 	// Create a channel to pass messages to all connections
-	commonMsgChannel := make(chan string)
+	commonMsgChannel := make(chan *Message)
 
 	// Wait for connections
 	for {
@@ -38,7 +39,7 @@ func main() {
 	}
 }
 
-func acceptMessages(conn net.Conn, commonMsgChannel chan string) {
+func acceptMessages(conn net.Conn, commonMsgChannel chan *Message) {
 	// FIXME use ReaderWriter
 	writer := bufio.NewWriter(conn)
 	reader := bufio.NewReader(conn)
@@ -46,15 +47,14 @@ func acceptMessages(conn net.Conn, commonMsgChannel chan string) {
 	userName := getUserName(writer, reader)
 
 	// channel for this user's messages
-	wMsgChannel := make(chan string)
+	wMsgChannel := make(chan *Message)
 
 	go waitForMessage(wMsgChannel, userName, reader)
 
 	for {
 		select {
 		case msg := <- commonMsgChannel:
-			fmt.Println("receive message on common channel")
-			writer.WriteString(msg + "\n")
+			writer.Write([]byte(fmt.Sprintf("[%s]: %s \n", msg.userName, msg.text)))
 			writer.Flush()
 		case wMsg := <- wMsgChannel:
 			commonMsgChannel <- wMsg
@@ -73,13 +73,15 @@ func getUserName(writer *bufio.Writer, reader *bufio.Reader) string {
 		// FIXME throw error here
 		return ""
 	}
+	userName = strings.TrimRight(userName, "\r\n")
+
 	writer.WriteString("Hello " + userName + "! Type a message and press Enter to send it to the chat room.\n")
 	writer.Flush()
 
 	return userName
 }
 
-func waitForMessage(wMsgChannel chan string, userName string, reader *bufio.Reader) {
+func waitForMessage(wMsgChannel chan *Message, userName string, reader *bufio.Reader) {
 	for {
 		// Restricted by the size of the underlying buffer
 		message, err := reader.ReadString('\n')
@@ -90,6 +92,12 @@ func waitForMessage(wMsgChannel chan string, userName string, reader *bufio.Read
 
 		fmt.Printf("[%v]: %v", userName, message)
 
-		wMsgChannel <- message
+		msg := Message{text: message, userName: userName}
+		wMsgChannel <- &msg
 	}
+}
+
+type Message struct{
+	text string
+	userName string
 }
