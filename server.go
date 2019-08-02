@@ -7,21 +7,21 @@ import (
 
 type Server struct {
 	Host, Port string
-	ConnectedUsers UserSet
+	ConnectedUsers UserGroup
 	CommonMsgChannel chan *Message
 	QuitChan chan *Message
 }
 
 
 func (server *Server) Start() {
-	// Start Listening on ip:port
-	fmt.Printf("Listening for connections at port %s\n", server.Port)
-	server.ConnectedUsers = NewUserSet()
+	server.ConnectedUsers = NewUserGroup()
 	// Create a channel to pass messages to all connections
 	server.CommonMsgChannel = make(chan *Message)
 	server.QuitChan = make(chan *Message)
 
-	listener, err := net.Listen("tcp", server.Host + ":" + server.Port)
+	// Start Listening on ip:port
+	fmt.Printf("Listening for connections at port %s\n", server.Port)
+	listener, err := net.Listen("tcp", ":" + server.Port)
 
 	if err != nil {
 		fmt.Println("Error starting the server", err.Error())
@@ -41,6 +41,7 @@ func (server *Server) Start() {
 		defer conn.Close()
 		server.acceptClientConnection(conn)
 	}
+
 }
 
 func (server *Server) HandleMessages() {
