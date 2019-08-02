@@ -12,12 +12,13 @@ type User struct {
 	UserName string
 	ReadChan chan *Message
 	CommonMsgChannel *chan *Message
+	QuitChannel *chan *Message
 
 	Reader *bufio.Reader
 	Writer *bufio.Writer
 }
 
-func CreateUser(conn net.Conn, commonChannel *chan *Message) *User{
+func CreateUser(conn net.Conn, commonChannel *chan *Message, quitChannel *chan *Message) *User{
 	user := User{}
 	
 	// FIXME use ReaderWriter
@@ -30,6 +31,7 @@ func CreateUser(conn net.Conn, commonChannel *chan *Message) *User{
 	user.ReadChan = make(chan *Message)
 	// channel for this user to write messages to
 	user.CommonMsgChannel = commonChannel
+	user.QuitChannel = quitChannel
 	return &user
 }
 
@@ -58,12 +60,13 @@ func (user *User) EnableSendMessage() {
 		message, err := user.Reader.ReadString('\n')
 		if err != nil {
 			fmt.Println("Client disconnected. ", err.Error())
+			*user.QuitChannel <- & Message{sender: user, timestamp: time.Now()}
 			break
 		}
 
 		fmt.Printf("[%v]: %v", user.UserName, message)
 
-		msg := Message{text: message, sender: user.UserName, timestamp: time.Now()}
+		msg := Message{text: message, sender: user, timestamp: time.Now()}
 
 		// Write message to all channels
 		go func(channel *chan *Message, msg *Message) {
@@ -75,12 +78,15 @@ func (user *User) EnableSendMessage() {
 func (user *User) ListenForMessages() {
 	for {
 		msg := <- user.ReadChan
-		fmt.Println("User message")
-		user.Writer.WriteString(fmt.Sprintf("[%s]: %s \n", msg.sender, msg.text))
+		user.Writer.WriteString(fmt.Sprintf("[%s %s]: %s \n", formatTime(msg.timestamp), msg.sender.UserName, msg.text))
 		user.Writer.Flush()
 
 	}
 
+}
+
+func formatTime(t time.Time) string {
+	return t.Format("2006-01-02 15:04:05-07:00")
 }
 
 func (user *User) Connect() {

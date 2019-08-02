@@ -6,6 +6,6 @@ import(
 
 type Message struct{
 	text string
-	sender string
+	sender *User
 	timestamp time.Time
 }

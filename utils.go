@@ -4,10 +4,14 @@ type UserSet struct {
     set map[*User]bool
 }
 
-func (set *UserSet) Add(user *User) bool {
-    _, found := set.set[user]
-    set.set[user] = true
+func (us *UserSet) Add(user *User) bool {
+    _, found := us.set[user]
+    us.set[user] = true
     return !found   //False if it existed already
+}
+
+func (us *UserSet) Remove(user *User) {
+    delete(us.set, user)
 }
 
 func NewUserSet() UserSet {
