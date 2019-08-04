@@ -1,10 +1,9 @@
 package main
 
 func main() {
-	// get from config
-	HOST := "localhost"
-	PORT := "8554"
+	// Loads configuration from ../config/default.json
+	configuration := LoadConfiguration()
 
-	server := Server{Host: HOST, Port: PORT}
+	server := NewServer(configuration)
 	server.Start()
 }

@@ -14,9 +14,15 @@ type Server struct {
 }
 
 
-func (server *Server) Start() {
+func NewServer(config Configuration) *Server {
+	server := Server{Host: config.ServerHost, Port: config.ServerPort}
+	server.Logger = &MessageLogger{LogFileLocation: config.LogFilePath}
 	server.ConnectedUsers = NewUserGroup()
-	server.Logger = &MessageLogger{}
+
+	return &server
+}
+
+func (server *Server) Start() {
 	// Create a channel to pass messages to all connections
 	server.CommonMsgChannel = make(chan *Message)
 	server.QuitChan = make(chan *Message)

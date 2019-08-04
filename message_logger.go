@@ -9,23 +9,20 @@ import(
 )
 
 type MessageLogger struct {
-	file string
+	LogFileLocation string
 	MsgChannel chan *Message
 }
 
 func (logger *MessageLogger) Start() {
 	logger.MsgChannel = make(chan *Message)
 
-	// FIXME get from config
-
-	folderName := "<log_folder_path>"
 	fileName := "messages.log"
-	err := os.MkdirAll(folderName, os.ModePerm)
+	err := os.MkdirAll(logger.LogFileLocation, os.ModePerm)
 	if err != nil {
         panic(err)
     }
 
-	path := filepath.Join(folderName, fileName)
+	path := filepath.Join(logger.LogFileLocation, fileName)
 
 	file, err := os.OpenFile(path, syscall.O_WRONLY|syscall.O_CREAT|syscall.O_APPEND, 0666)
 	fmt.Println("Logging all messages to " + path)
