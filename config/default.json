@@ -1,5 +1,5 @@
 {
-    "LogFilePath": "/home/bhavi/chat_server/logs",
-    "ServerHost": "localhost",
+    "LogFilePath": "",
+    "ServerHost": "0.0.0.0",
 	"ServerPort": "8554"
 }
