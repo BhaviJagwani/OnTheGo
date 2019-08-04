@@ -10,11 +10,13 @@ type Server struct {
 	ConnectedUsers UserGroup
 	CommonMsgChannel chan *Message
 	QuitChan chan *Message
+	Logger *MessageLogger
 }
 
 
 func (server *Server) Start() {
 	server.ConnectedUsers = NewUserGroup()
+	server.Logger = &MessageLogger{}
 	// Create a channel to pass messages to all connections
 	server.CommonMsgChannel = make(chan *Message)
 	server.QuitChan = make(chan *Message)
@@ -30,6 +32,8 @@ func (server *Server) Start() {
 
 	// Listen to messages on Common Channel and Broadcast to other users
 	go server.HandleMessages()
+
+	go server.Logger.Start()
 
 	for {
 		conn, err := listener.Accept()
@@ -49,11 +53,19 @@ func (server *Server) HandleMessages() {
 		select {
 		// Waiting for a message on the channel
 		case msg := <- server.CommonMsgChannel:
+			// Write to the logger channel
+			go func(logger *MessageLogger, msg *Message) {
+				logger.MsgChannel <- msg
+				} (server.Logger, msg)
+
+			// Write to other users' channels
+			server.ConnectedUsers.memberLock.Lock()
 			for user, _ := range server.ConnectedUsers.set {
 				if user.UserName != msg.sender.UserName {
 					user.ReadChan <- msg
 				}
 			}
+			server.ConnectedUsers.memberLock.Unlock()
 		case quitMsg := <- server.QuitChan:
 			server.ConnectedUsers.Remove(quitMsg.sender)
 		}

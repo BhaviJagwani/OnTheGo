@@ -68,7 +68,7 @@ func (user *User) EnableSendMessage() {
 
 		msg := Message{text: message, sender: user, timestamp: time.Now()}
 
-		// Write message to all channels
+		// Write message to common channel
 		go func(channel *chan *Message, msg *Message) {
 			*channel <- msg
 			} (user.CommonMsgChannel, &msg)
@@ -78,7 +78,7 @@ func (user *User) EnableSendMessage() {
 func (user *User) ListenForMessages() {
 	for {
 		msg := <- user.ReadChan
-		user.Writer.WriteString(fmt.Sprintf("[%s %s]: %s \n", formatTime(msg.timestamp), msg.sender.UserName, msg.text))
+		user.Writer.WriteString(msg.GetPrintableMessage())
 		user.Writer.Flush()
 
 	}
